@@ -22,7 +22,7 @@
   </header>
   
   <suggestedCameraView>
-    <position> <x>20</x> <y>10</y> <z>0</z> </position>
+    <position> <x>-30</x> <y>10</y> <z>30</z> </position>
     <lookat> <x>0</x> <y>0</y> <z>-5</z> </lookat>
     <up> <x>0</x> <y>1</y> <z>0</z> </up>
     <fovy>45</fovy>
@@ -31,21 +31,21 @@
   </suggestedCameraView>
 
   <suggestedCameraView>
-    <position> <x>0</x> <y>30</y> <z>-20</z> </position>
+    <position> <x>-30</x> <y>10</y> <z>-29</z> </position>
     <lookat> <x>0</x> <y>0</y> <z>-5</z> </lookat>
     <up> <x>0</x> <y>1</y> <z>0</z> </up>
     <fovy>45</fovy>
     <targetTangent> <x>-2</x> <y>0</y> <z>0</z> </targetTangent>
-    <targetTime>80</targetTime>
+    <targetTime>60</targetTime>
   </suggestedCameraView>
 
   <suggestedCameraView>
-    <position> <x>-50</x> <y>10</y> <z>0</z> </position>
-    <lookat> <x>0</x> <y>0</y> <z>-5</z> </lookat>
+    <position> <x>0</x> <y>25</y> <z>-30</z> </position>
+    <lookat> <x>0</x> <y>0</y> <z>0</z> </lookat>
     <up> <x>0</x> <y>1</y> <z>0</z> </up>
     <fovy>45</fovy>
     <targetTangent> <x>0</x> <y>0</y> <z>0</z> </targetTangent>
-    <targetTime>120</targetTime>
+    <targetTime>140</targetTime>
   </suggestedCameraView>
 
 
