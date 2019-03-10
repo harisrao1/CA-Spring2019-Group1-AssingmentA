@@ -49,14 +49,17 @@ int CheckOrigin(Util::Vector& vec, std::vector<Util::Vector>& simplex) {
 }
 
 Util::Vector support(const std::vector<Util::Vector>& mShape, const Util::Vector& v) {
-	float highest = std::numeric_limits<float>::min();
+	float temphigh = std::numeric_limits<float>::min();
 	int index = 0;
 
-	for (unsigned int i = 0; i < mShape.size(); i++) {
+	for (int i = 0; i < mShape.size(); i++) {
+		if (i == 0) {
+			index = 0;
+		}
 		Util::Vector t = mShape[i];
 		float dot = t * v;
-		if (dot > highest) {
-			highest = dot;
+		if (dot > temphigh) { // Keep updating  until we find the max number.
+			temphigh = dot;
 			index = i;
 		}
 	}
