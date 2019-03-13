@@ -131,6 +131,8 @@ namespace SteerLib
 		static bool intersect(float& return_penetration_depth, Util::Vector& return_penetration_vector, const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB);
 
 	private:
+		std::vector<Util::Vector> minkowsky(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB);
+		Util::Vector support(const Util::Vector& v);
 
 	}; // class GJK_EPA
 
