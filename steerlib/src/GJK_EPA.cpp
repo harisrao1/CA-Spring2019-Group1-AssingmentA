@@ -8,65 +8,88 @@ SteerLib::GJK_EPA::GJK_EPA()
 //Look at the GJK_EPA.h header file for documentation and instructions
 
 
-int CheckOrigin(Util::Vector& vec, std::vector<Util::Vector>& simplex) {
-	Util::Vector simplex1 = simplex.back();
-	Util::Vector Negsimplex1 = simplex1 * (-1);
+int CheckOrigin(Util::Vector& vec, std::vector<Util::Vector>& simp) {
+	Util::Vector simp1;
+	Util::Vector simp1N;
 
-	if (simplex.size() == 3) {  //if simplex is a trinagle
-		Util::Vector simplex2 = simplex[1];
-		Util::Vector simplex3 = simplex[0];
+	Util::Vector simp2;
+	Util::Vector simp3;
 
-		Util::Vector s2 = simplex2 - simplex1;
-		Util::Vector s3 = simplex3 - simplex1;
+	Util::Vector simpLine1;
+	Util::Vector simpLine2;
 
-		vec = Util::Vector(s2.z, 0, (-1)*s2.x);
-		if (vec*simplex3 > 0) { // checking if towards the origin.
-			vec = (-1) * vec;
+	Util::Vector vec1;
+	Util::Vector vec2;
+	Util::Vector vec3;
+
+	simp1 = simp.back();
+	simp1N = simp1 * (-1);
+
+	if (simp.size() > 2) {  //if simplex is a trinagle
+		simp2 = simp[1];
+		simp3 = simp[0];
+
+		simpLine1 = simp2 - simp1;
+		simpLine2 = simp3 - simp1;
+
+		vec1 = Util::Vector(simpLine1.z, 0, simpLine1.x * (-1));
+		vec2 = Util::Vector(simpLine2.z, 0, simpLine2.x * (-1));
+		if (vec1*simp3 > 0) { // checking if towards the origin.
+			vec1 = vec1 * (-1);
 		}
-		if (vec*Negsimplex1 > 0) {
-			simplex.erase(simplex.begin() + 0);
+		if (vec1*simp1N > 0) {
+			simp.erase(simp.begin() + 0);
+			vec = vec1;
 			return false;
 		}
-
-		vec = Util::Vector(s3.z, 0, s3.x * (-1));
-		if (vec*Negsimplex1 > 0) {
-			simplex.erase(simplex.begin() + 1);
+		if (vec2*simp1N > 0) {
+			simp.erase(simp.begin() + 1);
+			vec = vec2;
 			return false;
 		}
+		vec = vec1;
 		return true;
 	}
 	else {
-		Util::Vector side = simplex[1] - simplex[0];
+		simp2 = simp[1];
+		simp3 = simp[0];
+			Util::Vector simpLine3 = simp2 - simp3;
 
-		vec = Util::Vector(side.z, 0, side.x * (-1));
+		vec3 = Util::Vector(simpLine3.z, 0, simpLine3.x * (-1));
 
-		if (vec * Negsimplex1 < 0) {
-			vec = vec * (-1);
+		if (vec3 * simp1N < 0) {
+			vec3 = vec3 * (-1);
 		}
+		vec = vec3;
 		return false;
 	}
 	return false;
 }
 
-Util::Vector support(const std::vector<Util::Vector>& mShape, const Util::Vector& v) {
-	float temphigh = std::numeric_limits<float>::min();
-	int index = 0;
-
-	for (int i = 0; i < mShape.size(); i++) {
-		if (i == 0) {
+Util::Vector support(const std::vector<Util::Vector>& poly, const Util::Vector& vec) {
+	int index;
+	float currentMax;
+	if (poly.size() == 0)
+	{
+		index = 0;
+	}
+	for (int i = 0; i < poly.size(); i++) {
+		if (i == 0)
+		{
 			index = 0;
+			currentMax = std::numeric_limits<float>::lowest();
 		}
-		Util::Vector t = mShape[i];
-		float dot = t * v;
-		if (dot > temphigh) { // Keep updating  until we find the max number.
-			temphigh = dot;
+		Util::Vector t = poly[i];
+		float dot = t * vec;
+		if (dot > currentMax) {
+			currentMax = dot;
 			index = i;
 		}
 	}
-	return mShape[index];
+	return poly[index];
 }
 
-Util::Vector minkowsky(const std::vector<Util::Vector>& poly1, const std::vector<Util::Vector>& poly2, Util::Vector vec)
+Util::Vector minkowskyDiff(const std::vector<Util::Vector>& poly1, const std::vector<Util::Vector>& poly2, Util::Vector vec)
 {
 	Util::Vector poly1V;
 	Util::Vector poly2V;
@@ -81,12 +104,12 @@ Util::Vector minkowsky(const std::vector<Util::Vector>& poly1, const std::vector
 bool gjkAlgorithm(const std::vector<Util::Vector>& poly1, const std::vector<Util::Vector>& poly2, std::vector<Util::Vector>& simp)
 {
 	Util::Vector dVec(1, 0, -1);
-	simp.push_back(minkowsky(poly1, poly2, dVec));
+	simp.push_back(minkowskyDiff(poly1, poly2, dVec));
 	Util::Vector dVecN = dVec * (-1);
 
 	while (true)
 	{
-		simp.push_back(minkowsky(poly1, poly2, dVecN));
+		simp.push_back(minkowskyDiff(poly1, poly2, dVecN));
 
 		if (simp.back() * dVecN <= 0)
 		{
@@ -150,7 +173,7 @@ bool epaAlgorithm(const std::vector<Util::Vector>& poly1, const std::vector<Util
 	while (true)
 	{
 		closestEdge(simp, dist, vecNorm, i);
-		s = minkowsky(poly1, poly2, vecNorm);
+		s = minkowskyDiff(poly1, poly2, vecNorm);
 		d = s * vecNorm;
 
 		if (d - dist <= 0) {
@@ -164,15 +187,15 @@ bool epaAlgorithm(const std::vector<Util::Vector>& poly1, const std::vector<Util
 	}
 
 }
-bool SteerLib::GJK_EPA::intersect(float& return_penetration_depth, Util::Vector& return_penetration_vector, const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB)
+bool SteerLib::GJK_EPA::intersect(float& return_penetration_depth, Util::Vector& return_penetration_vector, const std::vector<Util::Vector>& poly1, const std::vector<Util::Vector>& poly2)
 {
 	bool intersect;
 	std::vector<Util::Vector> simp;
-	intersect = gjkAlgorithm(_shapeA, _shapeB, simp);
+	intersect = gjkAlgorithm(poly1, poly2, simp);
 
 	if (intersect == true)
 	{
-		epaAlgorithm(_shapeA, _shapeB, simp, return_penetration_depth, return_penetration_vector);
+		epaAlgorithm(poly1, poly2, simp, return_penetration_depth, return_penetration_vector);
 		simp.clear();
 		return true;
 	}

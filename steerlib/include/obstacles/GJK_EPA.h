@@ -22,6 +22,11 @@ namespace SteerLib
 
 	class STEERLIB_API GJK_EPA
 	{
+
+	private:
+		Util::Vector support(const Util::Vector& vec);
+		std::vector<Util::Vector> minkowskyDiff(const std::vector<Util::Vector>& poly1, const std::vector<Util::Vector>& poly2);
+
 	public:
 		GJK_EPA();
 
@@ -129,10 +134,6 @@ namespace SteerLib
 		*  DO NOT MODIFY polygon1.xml
 		*/
 		static bool intersect(float& return_penetration_depth, Util::Vector& return_penetration_vector, const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB);
-
-	private:
-		std::vector<Util::Vector> minkowsky(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB);
-		Util::Vector support(const Util::Vector& v);
 
 	}; // class GJK_EPA
 
