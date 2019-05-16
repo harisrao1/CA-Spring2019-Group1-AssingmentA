@@ -8,6 +8,7 @@
 #include "SocialForcesAgent.h"
 #include "SocialForcesAIModule.h"
 #include "SocialForces_Parameters.h"
+
 // #include <math.h>
 
 // #include "util/Geometry.h"
@@ -24,7 +25,9 @@ using namespace Util;
 using namespace SocialForcesGlobals;
 using namespace SteerLib;
 
+
 // #define _DEBUG_ENTROPY 1
+
 
 SocialForcesAgent::SocialForcesAgent()
 {
@@ -94,6 +97,13 @@ void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialCo
 
 	Util::AxisAlignedBox oldBounds(_position.x-_radius, _position.x+_radius, 0.0f, 0.5f, _position.z-_radius, _position.z+_radius);
 
+	pursue = false;
+	evade = false;
+	spiral = false;
+	queue = false;
+	angle = 0;
+	angleupdate = 1.0f;
+
 
 	// initialize the agent based on the initial conditions
 	/*
@@ -111,6 +121,20 @@ void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialCo
 	if ( initialConditions.colorSet == true )
 	{
 		this->_color = initialConditions.color;
+		if (initialConditions.color.r > 5 && initialConditions.color.g < 5) { // red will  pursue
+			pursue = true;
+		}
+		if (initialConditions.color.g > 5 && initialConditions.color.r < 5) {  // green will evade
+			evade = true;
+		}
+		if (initialConditions.color.b > 5 && initialConditions.color.r < 5) { // blue will spiral
+			
+			spiral = true;
+		}
+		if (initialConditions.color.r == 255 && initialConditions.color.b == 255 && initialConditions.color.g == 255) //white queues
+		{
+			queue = true;
+		}
 	}
 	else
 	{
@@ -765,6 +789,7 @@ void SocialForcesAgent::computeNeighbors()
 
 void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNumber)
 {
+	
 	// std::cout << "_SocialForcesParams.rvo_max_speed " << _SocialForcesParams._SocialForcesParams.rvo_max_speed << std::endl;
 	Util::AutomaticFunctionProfiler profileThisFunction( &SocialForcesGlobals::gPhaseProfilers->aiProfiler );
 	if (!enabled())
@@ -795,6 +820,33 @@ void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNu
 	}
 	// _prefVelocity = goalDirection * PERFERED_SPEED;
 	Util::Vector prefForce = (((goalDirection * PERFERED_SPEED) - velocity()) / (_SocialForcesParams.sf_acceleration/dt)); //assumption here
+	if (spiral == true) {
+		//std::cout << "FIN SPIRAL";
+		Util::Vector spir;
+		spir = growingSpiral(dt);
+		prefForce += spir;
+	}
+	
+	if (pursue == true || evade == true) {
+		//std::cout << "FIN PERSUE";
+		Util::Vector pursueNevade;
+		pursueNevade = pursueAndEvade(dt);
+
+		
+			prefForce = (prefForce + pursueNevade);
+		
+
+	}
+
+	if (queue == true)
+	{
+		Util::Vector queueVec;
+		queueVec = queueFunc();
+		//prefForce = queueVec;
+	}
+	
+	//std::cout << "updatinggggggggggggggg";
+	
 	prefForce = prefForce + velocity();
 	// _velocity = prefForce;
 
@@ -983,5 +1035,114 @@ void SocialForcesAgent::draw()
 #endif
 
 #endif
+
+	
 }
+
+Util::Vector SocialForcesAgent::growingSpiral(float dt)
+{
+
+	float Xaxis = (float)cos(angle);
+	float Zaxis = (float)sin(angle);
+
+	angle += dt * angleupdate;
+	if (angleupdate > 0.4f) {
+		angleupdate -= 0.0004f;
+	}
+
+	Util::Vector goTo = Util::Vector(Xaxis, 0, Zaxis);
+	return goTo;
+}
+
+Util::Vector SocialForcesAgent::pursueAndEvade(float dt) {
+
+	Util::Vector posUpdate = Util::Vector(0, 0, 0);
+	Util::Vector goTo = Util::Vector(0, 0, 0);
+	
+	std::set<SteerLib::SpatialDatabaseItemPtr> _neighbors;
+	getSimulationEngine()->getSpatialDatabase()->getItemsInRange(_neighbors,
+		_position.x - (this->_radius + _SocialForcesParams.sf_query_radius),
+		_position.x + (this->_radius + _SocialForcesParams.sf_query_radius),
+		_position.z - (this->_radius + _SocialForcesParams.sf_query_radius),
+		_position.z + (this->_radius + _SocialForcesParams.sf_query_radius),
+		dynamic_cast<SteerLib::SpatialDatabaseItemPtr>(this));
+
+	SocialForcesAgent* tmp_agent;
+
+	std::set<SteerLib::SpatialDatabaseItemPtr>::iterator ptr;
+	for (ptr = _neighbors.begin(); ptr != _neighbors.end(); ptr++)
+	{
+		if ((*ptr)->isAgent()) {
+			tmp_agent = (SocialForcesAgent*) dynamic_cast<SteerLib::AgentInterface *>(*ptr);
+			if (pursue == true) {
+				posUpdate = tmp_agent->position() + tmp_agent->velocity() * dt - position();
+				goTo = goTo + posUpdate;
+				break;
+			}
+			else if (evade == true) {
+				posUpdate = tmp_agent->position() + tmp_agent->velocity() * dt - position();
+				goTo = goTo - posUpdate;
+				break;
+			}
+			else {
+				break;
+			}
+		}
+	}
+	return goTo;
+
+}
+
+Util::Vector SocialForcesAgent::queueFunc() {
+
+	Util::Vector posUpdate = Util::Vector(0, 0, 0);
+	Util::Vector goTo = Util::Vector(0, 0, 0);
+
+	std::set<SteerLib::SpatialDatabaseItemPtr> _neighbors;
+	getSimulationEngine()->getSpatialDatabase()->getItemsInRange(_neighbors,
+		_position.x - (this->_radius + _SocialForcesParams.sf_query_radius),
+		_position.x + (this->_radius + _SocialForcesParams.sf_query_radius),
+		_position.z - (this->_radius + _SocialForcesParams.sf_query_radius),
+		_position.z + (this->_radius + _SocialForcesParams.sf_query_radius),
+		dynamic_cast<SteerLib::SpatialDatabaseItemPtr>(this));
+
+	SocialForcesAgent* tmp_agent;
+
+	std::set<SteerLib::SpatialDatabaseItemPtr>::iterator ptr;
+
+	Util::Point dest = _goalQueue.front().targetLocation;
+
+	float myDist = distanceBetween(position(), dest);
+	float neighborDist;
+	float mySpeed = this->velocity().length();
+	float myInitialSpeed = this->velocity().length();
+	//Util::Vector(this->velocity().x * 2, this->velocity().y, this->velocity().z * 2);
+
+	for (ptr = _neighbors.begin(); ptr != _neighbors.end(); ptr++)
+	{
+		if ((*ptr)->isAgent()) {
+			tmp_agent = (SocialForcesAgent*) dynamic_cast<SteerLib::AgentInterface *>(*ptr);
+			neighborDist = distanceBetween(tmp_agent->position(), dest);
+			float tmpSpeed = tmp_agent->velocity().length();
+
+			if (neighborDist < myDist)
+			{
+				if (mySpeed >= tmpSpeed)
+				{
+					mySpeed = mySpeed / 2;
+					break;
+				}
+			}
+			else
+			{
+				mySpeed = myInitialSpeed;
+				break;
+			}
+		}
+	}
+	return this->velocity();
+}
+
+
+
 

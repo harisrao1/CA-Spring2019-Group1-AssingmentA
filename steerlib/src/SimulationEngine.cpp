@@ -412,10 +412,6 @@ void SimulationEngine::preprocessSimulation()
 
 	std::vector<SteerLib::ModuleInterface*>::iterator iter;
 
-	for ( iter = _modulesInExecutionOrder.begin(); iter != _modulesInExecutionOrder.end();  ++iter ) {
-		(*iter)->preprocessSimulation();
-	}
-
 	this->_pathPlanner->refresh();
 	// reset the agents
 	for (size_t a=0; a < _agentInitialConditions.size(); a++)
@@ -424,6 +420,10 @@ void SimulationEngine::preprocessSimulation()
 		{
 			_agents.at(a)->reset(_agentInitialConditions.at(a),this);
 		}
+	}
+
+	for (iter = _modulesInExecutionOrder.begin(); iter != _modulesInExecutionOrder.end(); ++iter) {
+		(*iter)->preprocessSimulation();
 	}
 	// _agentInitialConditions.clear();
 

@@ -67,6 +67,14 @@ protected:
 	/// Updates position, velocity, and orientation of the agent, given the force and dt time step.
 	// void _doEulerStep(const Util::Vector & steeringDecisionForce, float dt);
 
+	bool pursue;
+	bool evade;
+	bool spiral;
+	bool queue;
+	double angle;
+	float angleupdate;
+
+
 	SocialForcesParameters _SocialForcesParams;
 
 	virtual SteerLib::EngineInterface * getSimulationEngine();
@@ -107,7 +115,9 @@ private:
 	Util::Vector calcWallNormal(SteerLib::ObstacleInterface* obs);
 	std::pair<Util::Point, Util::Point> calcWallPointsFromNormal(SteerLib::ObstacleInterface* obs, Util::Vector normal);
 	Util::Vector calcObsNormal(SteerLib::ObstacleInterface* obs);
-
+	Util::Vector pursueAndEvade(float dt);
+	Util::Vector growingSpiral(float dt);
+	Util::Vector queueFunc();
 	// For midterm planning stores the plan to the current goal
 	// holds the location of the best local target along the midtermpath
 
